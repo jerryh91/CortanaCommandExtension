@@ -59,6 +59,7 @@
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
+    <Reference Include="Windows.ApplicationModel" />
     <Reference Include="Windows.Foundation" />
     <Reference Include="Windows.Media" />
     <Reference Include="WindowsBase" />

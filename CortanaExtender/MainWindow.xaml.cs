@@ -15,6 +15,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Windows.Foundation;
 using Windows.Media.SpeechRecognition;
+using Windows.ApplicationModel.VoiceCommands;
 using WindowsInput;
 
 namespace CortanaExtender
@@ -26,6 +27,8 @@ namespace CortanaExtender
     {
         private SpeechRecognizer recognizer;
         private TypedEventHandler<SpeechContinuousRecognitionSession, SpeechContinuousRecognitionResultGeneratedEventArgs> resultGenerated;
+        private TypedEventHandler<SpeechRecognizer, SpeechRecognizerStateChangedEventArgs> OnStateChanged;
+        private List<string> constraints;
 
         public MainWindow()
         {
@@ -33,26 +36,34 @@ namespace CortanaExtender
 
             recognizer = new SpeechRecognizer();
             List<String> constraints = new List<string>();
-            constraints.Add("Yes");
-            constraints.Add("No");
             //recognizer.Constraints.Add(new SpeechRecognitionListConstraint(constraints));
             IAsyncOperation<SpeechRecognitionCompilationResult> op = recognizer.CompileConstraintsAsync();
             resultGenerated = new TypedEventHandler<SpeechContinuousRecognitionSession, SpeechContinuousRecognitionResultGeneratedEventArgs>(UpdateTextBox);
             recognizer.ContinuousRecognitionSession.ResultGenerated += resultGenerated;
+            OnStateChanged = new TypedEventHandler<SpeechRecognizer, SpeechRecognizerStateChangedEventArgs>(onStateChanged);
+            recognizer.StateChanged += OnStateChanged;
             op.Completed += HandleCompilationCompleted;
         }
 
         private void Start_Cortana(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine("cortana started");
-            InputSimulator.SimulateModifiedKeyStroke(VirtualKeyCode.LWIN, VirtualKeyCode.VK_S);
-            //Process.Start("C:\\Users\\Chris_Miramontes\\Documents\\Visual Studio 2015\\Projects\\ConsoleTestKeySim\\ConsoleTestKeySim\\bin\\Debug\\ConsoleTestKeySim.exe");
+            System.Diagnostics.Debug.WriteLine("add constraint clicked");
+            if (customPhrase.Text != null)
+            {
+                List<string> cons = new List<string>();
+                cons.Add(customPhrase.Text);
+                //var op = recognizer.ContinuousRecognitionSession.PauseAsync();
+                recognizer.Constraints.Add(new SpeechRecognitionListConstraint(cons));
+                IAsyncOperation<SpeechRecognitionCompilationResult> addConstraintOp = recognizer.CompileConstraintsAsync();
+            }
+            //IAsyncAction startPauseRecAction = recognizer.ContinuousRecognitionSession.StartAsync(SpeechContinuousRecognitionMode.PauseOnRecognition);
         }
 
         private void submitCustomPhrase(object sender, RoutedEventArgs e)
         {
             IAsyncAction startRec = recognizer.ContinuousRecognitionSession.StartAsync();
             System.Diagnostics.Debug.WriteLine("recognition started");
+            System.Diagnostics.Debug.WriteLine(recognizer.State.ToString());
             System.Threading.Thread.Sleep(1000);
             IAsyncAction stopRec = recognizer.ContinuousRecognitionSession.StopAsync();
             
@@ -68,6 +79,20 @@ namespace CortanaExtender
             {
                 customPhrase.Text = args.Result.Text;
             });
+        }
+
+        private async void onStateChanged(SpeechRecognizer rec, SpeechRecognizerStateChangedEventArgs args)
+        {
+            System.Diagnostics.Debug.WriteLine("in onStateChanged");
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (args.State == SpeechRecognizerState.Paused)
+                {
+                    System.Diagnostics.Debug.WriteLine("state was paused");
+                    InputSimulator.SimulateModifiedKeyStroke(VirtualKeyCode.LWIN, VirtualKeyCode.VK_S);
+                }
+            });
+            
         }
 
         public void HandleCompilationCompleted(IAsyncOperation<SpeechRecognitionCompilationResult> opInfo, AsyncStatus status)

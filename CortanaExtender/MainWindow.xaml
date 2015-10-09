@@ -11,7 +11,7 @@
             <RowDefinition/>
             <RowDefinition/>
         </Grid.RowDefinitions>
-        <Button Width="125" Height="30" Click="Start_Cortana" Margin="10" HorizontalAlignment="Right">Open Cortana</Button>
+        <Button Width="125" Height="30" Click="Start_Cortana" Margin="10" HorizontalAlignment="Right">Add Constraint</Button>
         <Button  Width="125" Height="30" Name="submitBtn" Click="submitCustomPhrase" Margin="10" HorizontalAlignment="Left">Submit Custom Phrase</Button>
         <TextBox Grid.Row="2" Name="customPhrase" Margin="5"></TextBox>
     </Grid>
