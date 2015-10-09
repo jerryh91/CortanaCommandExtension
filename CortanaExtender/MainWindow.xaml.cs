@@ -25,7 +25,7 @@ namespace CortanaExtender
     public partial class MainWindow : Window
     {
         private SpeechRecognizer recognizer;
-        public event TypedEventHandler<SpeechContinuousRecognitionSession, SpeechContinuousRecognitionResultGeneratedEventArgs> ResultGenerated;
+        private TypedEventHandler<SpeechContinuousRecognitionSession, SpeechContinuousRecognitionResultGeneratedEventArgs> resultGenerated;
 
         public MainWindow()
         {
@@ -35,10 +35,11 @@ namespace CortanaExtender
             List<String> constraints = new List<string>();
             constraints.Add("Yes");
             constraints.Add("No");
-            recognizer.Constraints.Add(new SpeechRecognitionListConstraint(constraints));
+            //recognizer.Constraints.Add(new SpeechRecognitionListConstraint(constraints));
             IAsyncOperation<SpeechRecognitionCompilationResult> op = recognizer.CompileConstraintsAsync();
+            resultGenerated = new TypedEventHandler<SpeechContinuousRecognitionSession, SpeechContinuousRecognitionResultGeneratedEventArgs>(UpdateTextBox);
+            recognizer.ContinuousRecognitionSession.ResultGenerated += resultGenerated;
             op.Completed += HandleCompilationCompleted;
-            this.ResultGenerated += UpdateTextBox;
         }
 
         private void Start_Cortana(object sender, RoutedEventArgs e)
@@ -54,14 +55,19 @@ namespace CortanaExtender
             System.Diagnostics.Debug.WriteLine("recognition started");
             System.Threading.Thread.Sleep(1000);
             IAsyncAction stopRec = recognizer.ContinuousRecognitionSession.StopAsync();
+            
             System.Diagnostics.Debug.WriteLine("recognition stopped");
             //stopRec.
         }
 
-        private void UpdateTextBox(SpeechContinuousRecognitionSession session, SpeechContinuousRecognitionResultGeneratedEventArgs args)
+        private async void UpdateTextBox(SpeechContinuousRecognitionSession session, SpeechContinuousRecognitionResultGeneratedEventArgs args)
         {
+
             System.Diagnostics.Debug.WriteLine("updated box with recognizer results");
-            customPhrase.Text = args.Result.Text;
+            await Dispatcher.InvokeAsync(() =>
+            {
+                customPhrase.Text = args.Result.Text;
+            });
         }
 
         public void HandleCompilationCompleted(IAsyncOperation<SpeechRecognitionCompilationResult> opInfo, AsyncStatus status)
