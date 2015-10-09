@@ -45,29 +45,43 @@ namespace CortanaExtender
             op.Completed += HandleCompilationCompleted;
         }
 
+        private void Start_Listener(Object sender, RoutedEventArgs e)
+        {
+            if (backgroundListener.State == SpeechRecognizerState.Idle || backgroundListener.State == SpeechRecognizerState.Paused)
+            {
+                var asyncResult = backgroundListener.RecognizeAsync();
+                debugPauseResult(asyncResult);
+            }
+        }
+
         private void Start_Cortana(object sender, RoutedEventArgs e)
         {
             System.Diagnostics.Debug.WriteLine("add constraint clicked");
             if (customPhrase.Text != null)
             {
+                if (backgroundListener.State != SpeechRecognizerState.Paused && backgroundListener.State != SpeechRecognizerState.Idle)
+                {
+                    System.Diagnostics.Debug.WriteLine(backgroundListener.State);
+                    var async = backgroundListener.StopRecognitionAsync();
+                    while (async.Status != AsyncStatus.Completed) { }
+                }
                 List<string> cons = new List<string>();
                 cons.Add(customPhrase.Text);
                 backgroundListener.Constraints.Add(new SpeechRecognitionListConstraint(cons));
                 IAsyncOperation<SpeechRecognitionCompilationResult> addConstraintOp = backgroundListener.CompileConstraintsAsync();
-                while (addConstraintOp.Status != AsyncStatus.Completed) { }
-                IAsyncOperation<SpeechRecognitionResult> startPauseRecAction = backgroundListener.RecognizeAsync();
-                debugPauseResult(startPauseRecAction);
             }
         }
 
-        private void debugPauseResult(IAsyncOperation<SpeechRecognitionResult> op)
+        private async void debugPauseResult(IAsyncOperation<SpeechRecognitionResult> op)
         {
-            while (op.Status != AsyncStatus.Completed) { }
-            if (op.GetResults().Constraint != null)
+            await Dispatcher.InvokeAsync(() =>
             {
-                InputSimulator.SimulateModifiedKeyStroke(VirtualKeyCode.LWIN, VirtualKeyCode.VK_S);
-            }
-            Start_Cortana(null, null);
+                while (op.Status != AsyncStatus.Completed) { }
+                if (op.GetResults().Constraint != null)
+                {
+                    InputSimulator.SimulateModifiedKeyStroke(VirtualKeyCode.LWIN, VirtualKeyCode.VK_S);
+                }
+            });
         }
 
         private void submitCustomPhrase(object sender, RoutedEventArgs e)
