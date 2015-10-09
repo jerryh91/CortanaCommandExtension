@@ -1,0 +1,18 @@
+﻿<Window x:Class="CortanaExtender.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CortanaExtender"
+        mc:Ignorable="d"
+        Title="Cortana Customization Tool" Height="350" Width="525">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Button Width="125" Height="30" Click="Start_Cortana" Margin="10" HorizontalAlignment="Right">Open Cortana</Button>
+        <Button  Width="125" Height="30" Name="submitBtn" Click="submitCustomPhrase" Margin="10" HorizontalAlignment="Left">Submit Custom Phrase</Button>
+        <TextBox Grid.Row="2" Name="customPhrase" Margin="5"></TextBox>
+    </Grid>
+</Window>
