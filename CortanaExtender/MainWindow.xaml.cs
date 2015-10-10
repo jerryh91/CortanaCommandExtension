@@ -17,6 +17,7 @@ using Windows.Foundation;
 using Windows.Media.SpeechRecognition;
 using Windows.ApplicationModel.VoiceCommands;
 using WindowsInput;
+using System.IO;
 
 namespace CortanaExtender
 {
@@ -25,112 +26,115 @@ namespace CortanaExtender
     /// </summary>
     public partial class MainWindow : Window
     {
-        private SpeechRecognizer nonConstrainedRecognizer;
+        private List<string> constraints;
         private SpeechRecognizer backgroundListener;
-        private TypedEventHandler<SpeechContinuousRecognitionSession, SpeechContinuousRecognitionResultGeneratedEventArgs> resultGenerated;
-        private TypedEventHandler<SpeechRecognizer, SpeechRecognizerStateChangedEventArgs> OnStateChanged;
+        private TypedEventHandler<SpeechContinuousRecognitionSession, SpeechContinuousRecognitionResultGeneratedEventArgs> BLResultGenerated;
 
         public MainWindow()
         {
             InitializeComponent();
 
-            nonConstrainedRecognizer = new SpeechRecognizer();
             backgroundListener = new SpeechRecognizer();
-            //recognizer.Constraints.Add(new SpeechRecognitionListConstraint(constraints));
-            IAsyncOperation<SpeechRecognitionCompilationResult> op = nonConstrainedRecognizer.CompileConstraintsAsync();
-            resultGenerated = new TypedEventHandler<SpeechContinuousRecognitionSession, SpeechContinuousRecognitionResultGeneratedEventArgs>(UpdateTextBox);
-            nonConstrainedRecognizer.ContinuousRecognitionSession.ResultGenerated += resultGenerated;
-            OnStateChanged = new TypedEventHandler<SpeechRecognizer, SpeechRecognizerStateChangedEventArgs>(onStateChanged);
-            backgroundListener.StateChanged += OnStateChanged;
-            op.Completed += HandleCompilationCompleted;
-        }
+            constraints = new List<string>();
+            BLResultGenerated = new TypedEventHandler<SpeechContinuousRecognitionSession, SpeechContinuousRecognitionResultGeneratedEventArgs>(blResultGenerated);
+            backgroundListener.ContinuousRecognitionSession.ResultGenerated += BLResultGenerated;
 
-        private void Start_Listener(Object sender, RoutedEventArgs e)
-        {
-            if (backgroundListener.State == SpeechRecognizerState.Idle || backgroundListener.State == SpeechRecognizerState.Paused)
-            {
-                var asyncResult = backgroundListener.RecognizeAsync();
-                debugPauseResult(asyncResult);
-            }
-        }
+            constraints = readInConstraintsFromFile();
+            updateConstraintsWindow(constraints);
 
-        private void Start_Cortana(object sender, RoutedEventArgs e)
-        {
-            System.Diagnostics.Debug.WriteLine("add constraint clicked");
-            if (customPhrase.Text != null)
-            {
-                if (backgroundListener.State != SpeechRecognizerState.Paused && backgroundListener.State != SpeechRecognizerState.Idle)
+            var waitOn = loadOnStart();
+            while (waitOn.Status != AsyncStatus.Completed) { }
+            var ff = backgroundListener.ContinuousRecognitionSession.StartAsync();
+
+            System.Windows.Forms.NotifyIcon ni = new System.Windows.Forms.NotifyIcon();
+            ni.Icon = new System.Drawing.Icon("trayImage.ico");
+            ni.Visible = true;
+            ni.DoubleClick +=
+                delegate (object sender, EventArgs args)
                 {
-                    System.Diagnostics.Debug.WriteLine(backgroundListener.State);
-                    var async = backgroundListener.StopRecognitionAsync();
-                    while (async.Status != AsyncStatus.Completed) { }
-                }
-                List<string> cons = new List<string>();
-                cons.Add(customPhrase.Text);
-                backgroundListener.Constraints.Add(new SpeechRecognitionListConstraint(cons));
-                IAsyncOperation<SpeechRecognitionCompilationResult> addConstraintOp = backgroundListener.CompileConstraintsAsync();
-            }
+                    this.Show();
+                    this.WindowState = WindowState.Normal;
+                };
         }
 
-        private async void debugPauseResult(IAsyncOperation<SpeechRecognitionResult> op)
+        private List<string> readInConstraintsFromFile()
         {
-            await Dispatcher.InvokeAsync(() =>
+            string fileName = @"Stored_Constraints.txt";
+            string currPath = Directory.GetCurrentDirectory();
+            string filePath = System.IO.Path.Combine(currPath, fileName);
+
+            List<string> existingConstraints = new List<string>();
+            string line;
+
+            try
             {
-                while (op.Status != AsyncStatus.Completed) { }
-                if (op.GetResults().Constraint != null)
+                if (!File.Exists(filePath))
                 {
-                    InputSimulator.SimulateModifiedKeyStroke(VirtualKeyCode.LWIN, VirtualKeyCode.VK_S);
+                    File.Create(filePath);
                 }
-            });
-        }
 
-        private void submitCustomPhrase(object sender, RoutedEventArgs e)
-        {
-            IAsyncAction startRec = nonConstrainedRecognizer.ContinuousRecognitionSession.StartAsync();
-            System.Diagnostics.Debug.WriteLine("recognition started");
-            System.Threading.Thread.Sleep(3000);
-            IAsyncAction stopRec = nonConstrainedRecognizer.ContinuousRecognitionSession.StopAsync();
-            
-            System.Diagnostics.Debug.WriteLine("recognition stopped");
-            //stopRec.
-        }
-
-        private async void UpdateTextBox(SpeechContinuousRecognitionSession session, SpeechContinuousRecognitionResultGeneratedEventArgs args)
-        {
-
-            System.Diagnostics.Debug.WriteLine("updated box with recognizer results");
-            await Dispatcher.InvokeAsync(() =>
+                System.IO.StreamReader file1 = new System.IO.StreamReader(filePath);
+                while ((line = file1.ReadLine()) != null)
+                {
+                    existingConstraints.Add(line);
+                }
+            }
+            catch (Exception ex)
             {
-                customPhrase.Text = args.Result.Text;
-            });
+                Debug.WriteLine(ex.ToString());
+            }
+
+            return existingConstraints;
         }
 
-        private void onStateChanged(SpeechRecognizer rec, SpeechRecognizerStateChangedEventArgs args)
+        private void blResultGenerated(SpeechContinuousRecognitionSession session, SpeechContinuousRecognitionResultGeneratedEventArgs args)
         {
-            System.Diagnostics.Debug.WriteLine("in onStateChanged: " + args.State);
-            //await Dispatcher.InvokeAsync(() =>
-            //{
-            //System.Diagnostics.Debug.WriteLine("in async");
-            if (args.State == SpeechRecognizerState.Paused)
+            if (args.Result.Constraint != null)
             {
-                System.Diagnostics.Debug.WriteLine("state was paused");
                 InputSimulator.SimulateModifiedKeyStroke(VirtualKeyCode.LWIN, VirtualKeyCode.VK_S);
             }
-            else if (args.State == SpeechRecognizerState.Idle)
-            {
-                System.Diagnostics.Debug.WriteLine("Should restart here");
-            }
-            //});
         }
 
-        public void HandleCompilationCompleted(IAsyncOperation<SpeechRecognitionCompilationResult> opInfo, AsyncStatus status)
+        private void Add_Constraint(Object sender, RoutedEventArgs e)
         {
-            if (status == AsyncStatus.Completed)
+            if (backgroundListener.State != SpeechRecognizerState.Idle && backgroundListener.State != SpeechRecognizerState.Paused)
             {
-                System.Diagnostics.Debug.WriteLine("Compilation Complete");
-                var result = opInfo.GetResults();
-                System.Diagnostics.Debug.WriteLine(result.Status.ToString());
+                var async = backgroundListener.ContinuousRecognitionSession.StopAsync();
+                while (async.Status != AsyncStatus.Completed) { }
             }
+            constraints.Add(customPhrase.Text);
+            updateConstraintsWindow(constraints);
+            backgroundListener.Constraints.Clear();
+            backgroundListener.Constraints.Add(new SpeechRecognitionListConstraint(constraints));
+            var blCompileConstraints = backgroundListener.CompileConstraintsAsync();
+            while (blCompileConstraints.Status != AsyncStatus.Completed) { }
+            var leavemealone = backgroundListener.ContinuousRecognitionSession.StartAsync();
+        }
+
+        private void updateConstraintsWindow(List<string> cons)
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (String str in cons)
+            {
+                builder.Append("\n" + str);
+            }
+
+            TextBlockSavedConstraints.Text = builder.ToString();
+        }
+
+        protected override void OnStateChanged(EventArgs e)
+        {
+            if (WindowState == System.Windows.WindowState.Minimized)
+                this.Hide();
+
+            base.OnStateChanged(e);
+        }
+
+        private IAsyncOperation<SpeechRecognitionCompilationResult> loadOnStart()
+        {
+            backgroundListener.Constraints.Clear();
+            backgroundListener.Constraints.Add(new SpeechRecognitionListConstraint(constraints));
+            return backgroundListener.CompileConstraintsAsync();
         }
     }
 }
