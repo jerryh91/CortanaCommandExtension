@@ -138,7 +138,15 @@ namespace CortanaExtender
         {
             if (args.Result.Constraint != null)
             {
-                InputSimulator.SimulateModifiedKeyStroke(VirtualKeyCode.LWIN, VirtualKeyCode.VK_S);
+                switch (args.Result.Text)
+                {
+                    case "Open Netflix now":
+                        Process.Start(@"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe", @"http:\\www.netflix.com");
+                        break;
+                    default:
+                        InputSimulator.SimulateModifiedKeyStroke(VirtualKeyCode.LWIN, VirtualKeyCode.VK_S);
+                        break;
+                }
             }
         }
 
