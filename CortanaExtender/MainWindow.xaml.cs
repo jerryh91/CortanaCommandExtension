@@ -34,6 +34,9 @@ namespace CortanaExtender
         private NotifyIcon notifyIcon;
         private string filePath;
 
+        /// <summary>
+        /// Constructor initializes necessary variables and reads in saved constraints from text file.
+        /// </summary>
         public MainWindow()
         {
             InitializeComponent();
@@ -67,6 +70,10 @@ namespace CortanaExtender
                 };
         }
 
+        /// <summary>
+        /// Reads in saved constraints from text file.
+        /// </summary>
+        /// <returns>List of constraint strings.</returns>
         private List<string> readInConstraintsFromFile()
         {
             List<string> existingConstraints = new List<string>();
@@ -93,7 +100,10 @@ namespace CortanaExtender
 
             return existingConstraints;
         }
-
+        
+        /// <summary>
+        /// Writes all current constraints in "constraints" variable to the saved text file if they are not already there.
+        /// </summary>
         private void WriteConstraintsToFile()
         {
             IEnumerable<string> NewConstraintsToSave = constraints.Except(currentlyStoredConstraints);
@@ -108,12 +118,22 @@ namespace CortanaExtender
             }
         }
 
+        /// <summary>
+        /// Event to run on application closing. Turns off the notify icon and saves constraints to storage file.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void OnAppClosing(Object sender, EventArgs args)
         {
             notifyIcon.Visible = false;
             WriteConstraintsToFile();
         }
 
+        /// <summary>
+        /// Triggers cortana with simulated key combo if constraint is heard.
+        /// </summary>
+        /// <param name="session">backgroundListener's continuous recognition session.</param>
+        /// <param name="args">Result arguments</param>
         private void blResultGenerated(SpeechContinuousRecognitionSession session, SpeechContinuousRecognitionResultGeneratedEventArgs args)
         {
             if (args.Result.Constraint != null)
@@ -122,6 +142,11 @@ namespace CortanaExtender
             }
         }
 
+        /// <summary>
+        /// Add's value of custom phrase textbox to constraints list and recompiles the listener's constraints.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Add_Constraint(Object sender, RoutedEventArgs e)
         {
             if (customPhrase.Text != "" && customPhrase.Text != null)
@@ -142,6 +167,11 @@ namespace CortanaExtender
             }
         }
 
+        /// <summary>
+        /// Uses removePhrase text box's value to remove value from constraints and if it exists deletes it from storage as well.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Remove_Constraint(Object sender, RoutedEventArgs e)
         {
             if (removePhrase.Text != "" && removePhrase.Text != null)
@@ -167,6 +197,10 @@ namespace CortanaExtender
             }
         }
 
+        /// <summary>
+        /// Delete's given value from the constraint's text file storage.
+        /// </summary>
+        /// <param name="toDelete">Constraint to delete.</param>
         private void DeleteConstraintFromFile(string toDelete)
         {
             StringBuilder builder = new StringBuilder();
@@ -182,6 +216,10 @@ namespace CortanaExtender
             File.WriteAllText(filePath, builder.ToString());
         }
 
+        /// <summary>
+        /// Updates the text block showing constraints to match the current Constraint list variable.
+        /// </summary>
+        /// <param name="cons"></param>
         private void updateConstraintsWindow(List<string> cons)
         {
             StringBuilder builder = new StringBuilder();
@@ -193,6 +231,10 @@ namespace CortanaExtender
             TextBlockSavedConstraints.Text = builder.ToString();
         }
 
+        /// <summary>
+        /// Starts the background listener on start of the application with current constraint values.
+        /// </summary>
+        /// <returns>IAsyncOperation to hold until it completes.</returns>
         private IAsyncOperation<SpeechRecognitionCompilationResult> loadOnStart()
         {
             backgroundListener.Constraints.Clear();
