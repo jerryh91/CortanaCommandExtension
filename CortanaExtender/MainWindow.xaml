@@ -26,8 +26,9 @@
 		    Margin="0,5,0,0"
 		    Grid.Row="1">
             <TabItem Header="Saved Constraints">
-                <Grid Background="#FFE5E5E5">
-                    <TextBlock HorizontalAlignment="Left"
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <Grid Background="#FFE5E5E5">
+                        <TextBlock HorizontalAlignment="Left"
                         Name="TextBlockSavedConstraints"
 			            Margin="10"
                         Text=""
@@ -35,8 +36,9 @@
 			            VerticalAlignment="Top"
                         ScrollViewer.CanContentScroll="true"
                         ScrollViewer.VerticalScrollBarVisibility="Visible"
-			            Width="471"/>
-                </Grid>
+			            />
+                    </Grid>
+                </ScrollViewer>
             </TabItem>
         </TabControl>
 

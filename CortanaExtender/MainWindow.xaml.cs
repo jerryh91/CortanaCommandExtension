@@ -41,7 +41,7 @@ namespace CortanaExtender
             constraints = new List<string>();
             BLResultGenerated = new TypedEventHandler<SpeechContinuousRecognitionSession, SpeechContinuousRecognitionResultGeneratedEventArgs>(blResultGenerated);
             backgroundListener.ContinuousRecognitionSession.ResultGenerated += BLResultGenerated;
-
+            
             constraints = readInConstraintsFromFile();
             currentlyStoredConstraints = constraints.ToList();
             updateConstraintsWindow(constraints);
@@ -235,7 +235,7 @@ namespace CortanaExtender
             StringBuilder builder = new StringBuilder();
             foreach (String str in cons)
             {
-                builder.Append("\n" + str + " - " + dateTimesForConstraints[str]);
+                builder.Append(str + " - " + dateTimesForConstraints[str] + "\n");
             }
 
             TextBlockSavedConstraints.Text = builder.ToString();
