@@ -18,6 +18,7 @@ namespace CortanaExtender
     public partial class MainWindow : Window
     {
         private List<string> currentlyStoredConstraints;
+        private Dictionary<string, string> dateTimesForConstraints;
         private List<string> constraints;
         private SpeechRecognizer backgroundListener;
         private TypedEventHandler<SpeechContinuousRecognitionSession, SpeechContinuousRecognitionResultGeneratedEventArgs> BLResultGenerated;
@@ -32,7 +33,9 @@ namespace CortanaExtender
             InitializeComponent();
 
             string fileName = @"Stored_Constraints.txt";
+            Debug.WriteLine(DateTime.Now.ToString());
             filePath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), fileName);
+            dateTimesForConstraints = new Dictionary<string, string>();
 
             backgroundListener = new SpeechRecognizer();
             constraints = new List<string>();
@@ -69,6 +72,9 @@ namespace CortanaExtender
             List<string> existingConstraints = new List<string>();
             string line;
 
+            char[] delimeter = new char[1] { ',' };
+            string[] result = new string[2];
+
             try
             {
                 if (!File.Exists(filePath))
@@ -79,8 +85,11 @@ namespace CortanaExtender
                 StreamReader reader = new StreamReader(filePath);
                 while ((line = reader.ReadLine()) != null)
                 {
-                    existingConstraints.Add(line);
+                    result = line.Split(delimeter);
+                    existingConstraints.Add(result[0]);
+                    dateTimesForConstraints.Add(result[0], result[1]);
                 }
+
                 reader.Close();
             }
             catch (Exception ex)
@@ -102,7 +111,7 @@ namespace CortanaExtender
             {
                 foreach (string str in NewConstraintsToSave)
                 {
-                    writer.WriteLine(str);
+                    writer.WriteLine(str + "," + dateTimesForConstraints[str]);
                 }
                 writer.Close();
             }
@@ -156,6 +165,7 @@ namespace CortanaExtender
                 }
 
                 constraints.Add(customPhrase.Text);
+                dateTimesForConstraints.Add(customPhrase.Text, DateTime.Now.ToString());
                 updateConstraintsWindow(constraints);
                 customPhrase.Text = string.Empty;
                 backgroundListener.Constraints.Clear();
@@ -183,7 +193,8 @@ namespace CortanaExtender
 
                 if (constraints.Remove(removePhrase.Text))
                 {
-                    DeleteConstraintFromFile(removePhrase.Text);
+                    DeleteConstraintFromFile(removePhrase.Text + "," + dateTimesForConstraints[removePhrase.Text]);
+                    dateTimesForConstraints.Remove(removePhrase.Text);
                 }
 
                 updateConstraintsWindow(constraints);
@@ -224,7 +235,7 @@ namespace CortanaExtender
             StringBuilder builder = new StringBuilder();
             foreach (String str in cons)
             {
-                builder.Append("\n" + str);
+                builder.Append("\n" + str + " - " + dateTimesForConstraints[str]);
             }
 
             TextBlockSavedConstraints.Text = builder.ToString();
